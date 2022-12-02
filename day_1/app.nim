@@ -7,41 +7,40 @@ iterator readLine(filename: string): string =
   for line in lines.split('\n'):
     yield line
 
-proc part_one(): Natural =
+iterator readChunk(filename: string): Natural =
   var sum = 0
-  var max = 0
-  for line in readLine("input.txt"):
+  for line in readLine(filename):
     if line == "":
-      if sum > max:
-        max = sum
+      let res = sum
       sum = 0
+      yield res
     else:
       sum += parseInt(line)
-  return max
 
-let part_one_answer = part_one()
-echo fmt"Part One: {part_one_answer}"
-
-proc part_two(): Natural =
-  var top_n = initHeapQueue[Natural]()
+proc topNChunks(filename: string, n: Natural): Natural =
+  var topN = initHeapQueue[Natural]()
+  for sum in readChunk(filename):
+    let l = len(topN)
+    if l == 0:
+      topN.push(sum)
+    elif len(topN) > 0 and topN[0] < sum:
+      if len(topN) == n:
+        discard replace(topN, sum)
+      else:
+        topN.push(sum)
   var sum = 0
-  for line in readLine("input.txt"):
-    if line == "":
-      let l = len(top_n)
-      if l == 0:
-        top_n.push(sum)
-      elif len(top_n) > 0 and top_n[0] < sum:
-        if len(top_n) == 3:
-          discard replace(top_n, sum)
-        else:
-          top_n.push(sum)
-      sum = 0
-    else:
-      sum += parseInt(line)
-  sum = 0
-  while len(top_n) > 0:
-    sum += pop(top_n)
+  while len(topN) > 0:
+    sum += pop(topN)
   return sum
 
-let part_two_answer = part_two()
-echo fmt"Part Two: {part_two_answer}"
+proc partOne(): Natural =
+  return topNChunks("input.txt", 1)
+
+let partOneAnswer = partOne()
+echo fmt"Part One: {partOneAnswer}"
+
+proc partTwo(): Natural =
+  return topNChunks("input.txt", 3)
+
+let partTwoAnswer = partTwo()
+echo fmt"Part Two: {partTwoAnswer}"
