@@ -3,10 +3,14 @@ import strutils, std/heapqueue, std/strformat, std/sequtils
 iterator readChunk(filename: string): Natural =
   let file = open(filename)
   defer: file.close()
-  let lines = readAll(file)
-  for chunk in lines.split("\n\n"):
-    let split = splitLines(strip(chunk))
-    yield foldl(split, a + parseInt(b), 0)
+  var chunk = newSeq[Natural]()
+  while not endOfFile(file):
+    let line = readLine(file)
+    if line == "":
+      yield foldl(chunk, a + b, 0)
+      chunk.setLen(0)
+    else:
+      chunk.add(parseInt(line))
 
 proc topNChunks(filename: string, n: Natural): Natural =
   var topN = initHeapQueue[Natural]()
