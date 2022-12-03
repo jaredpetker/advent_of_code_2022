@@ -1,21 +1,12 @@
-import strutils, std/heapqueue, std/strformat
+import strutils, std/heapqueue, std/strformat, std/sequtils
 
-iterator readLine(filename: string): string =
+iterator readChunk(filename: string): Natural =
   let file = open(filename)
   defer: file.close()
   let lines = readAll(file)
-  for line in lines.split('\n'):
-    yield line
-
-iterator readChunk(filename: string): Natural =
-  var sum = 0
-  for line in readLine(filename):
-    if line == "":
-      let res = sum
-      sum = 0
-      yield res
-    else:
-      sum += parseInt(line)
+  for chunk in lines.split("\n\n"):
+    let split = splitLines(strip(chunk))
+    yield foldl(split, a + parseInt(b), 0)
 
 proc topNChunks(filename: string, n: Natural): Natural =
   var topN = initHeapQueue[Natural]()
