@@ -1,12 +1,7 @@
-import std/strutils, std/strformat
+import std/strutils, std/strformat, std/sets
 
 type
   Compartments = tuple[first: string, second: string]
-
-# part 1
-iterator readCompartments(filename: string): Compartments =
-  for line in filename.lines:
-    yield (line[0 .. int(line.len / 2) - 1], line[int(line.len / 2) .. line.len - 1])
 
 proc getItemValue(item: char): Natural =
   let rawValue = ord(item)
@@ -15,31 +10,33 @@ proc getItemValue(item: char): Natural =
   else:
     return rawValue - 38
 
+# part 1
+iterator readCompartments(filename: string): Compartments =
+  for line in filename.lines:
+    yield (line[0 .. int(line.len / 2) - 1], line[int(line.len / 2) .. line.len - 1])
+
 proc getDuplicatedItemPrioritySum(filename: string): Natural =
   var sum = 0
   for compartments in readCompartments(filename):
-    for c in compartments.first:
-      if compartments.second.contains(c):
-        sum += getItemValue(c)
-        break
+    var c = toHashSet(compartments.first) * toHashSet(compartments.second)
+    sum += getItemValue(c.pop)
   return sum
 
 # part 2
-iterator readGroups(filename: string): tuple[a: string, b: string, c: string] =
-  var grouped = newSeq[string]()
-  for line in filename.lines:
-    grouped.add(line)
-    if grouped.len == 3:
-      yield (grouped[0], grouped[1], grouped[2])
-      grouped.setLen(0)
+proc nextLine(filename: string): iterator(): string =
+  return iterator(): string =
+    for line in filename.lines:
+      yield line
 
 proc getGroupBadgePrioritySum(filename: string): Natural =
+  let next = nextLine(filename)
   var sum = 0
-  for group in readGroups(filename):
-    for c in group.a:
-      if group.b.contains(c) and group.c.contains(c):
-        sum += getItemValue(c)
-        break
+  while true:
+    let (a, b, c) = (toHashSet(next()), toHashSet(next()), toHashSet(next()))
+    if finished(next):
+      break
+    var intersection = a * b * c
+    sum += getItemValue(intersection.pop)
   return sum
 
 # print answers
