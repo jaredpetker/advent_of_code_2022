@@ -44,11 +44,8 @@ let RequiredMoveMap = {
 
 # abstracted iterator for reading pairs of characters from the given input
 iterator readPairs(filename: string): tuple[a: char, b: char] =
-  let file = open(filename)
-  defer: file.close()
   let chunk = newSeq[Natural]()
-  while not endOfFile(file):
-    let line = readLine(file)
+  for line in filename.lines:
     let pair = line.split(' ')
     yield (pair[0][0], pair[1][0])
 

@@ -1,11 +1,8 @@
 import strutils, std/heapqueue, std/strformat, std/sequtils
 
 iterator readChunk(filename: string): Natural =
-  let file = open(filename)
-  defer: file.close()
   var chunk = newSeq[Natural]()
-  while not endOfFile(file):
-    let line = readLine(file)
+  for line in filename.lines:
     if line == "":
       yield foldl(chunk, a + b, 0)
       chunk.setLen(0)
