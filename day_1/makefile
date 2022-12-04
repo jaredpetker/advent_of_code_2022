@@ -1,3 +1,6 @@
+build:
+	nimble build
+
 run:
-	nim c -r app.nim
+	nimble run
 	

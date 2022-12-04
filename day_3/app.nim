@@ -1,4 +1,4 @@
-import std/strutils, std/heapqueue, std/strformat, std/sequtils, std/tables
+import std/strutils, std/strformat
 
 type
   Compartments = tuple[first: string, second: string]
