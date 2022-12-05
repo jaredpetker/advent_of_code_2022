@@ -1,4 +1,4 @@
-import std/strutils, std/strformat, std/sets, std/re, std/sequtils
+import std/strutils, std/re, std/sequtils
 
 
 proc contained(nums: seq): bool =
