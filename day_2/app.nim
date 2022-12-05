@@ -13,6 +13,7 @@ type
       Lose = 0, Draw = 3, Win = 6
 
 let MoveScore = {MyMove.Rock: 1, MyMove.Paper: 2, MyMove.Scissors: 3}.toTable
+# way too complex but I wanted to play with nim's tuples and tables
 let RoundScore = {
   (TheirMove.Scissors, MyMove.Rock): MoveScore[MyMove.Rock] + int(OutcomeScore.Win),
   (TheirMove.Paper, MyMove.Rock): MoveScore[MyMove.Rock] + int(OutcomeScore.Lose),
