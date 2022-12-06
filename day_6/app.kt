@@ -1,10 +1,10 @@
 import java.io.File
 
 fun findMarker(input: String, uniqueChars: Int): Int {
-    return (0..input.length - uniqueChars).indexOfFirst {
-        input.subSequence(it until it + uniqueChars).chars().distinct().count().toInt() == uniqueChars
+    return input.asSequence().windowed(uniqueChars, 1).indexOfFirst {
+        it.distinct().count().toInt() == uniqueChars
     } + uniqueChars
-}
+
 
 fun part1(input: String) = findMarker(input, 4)
 fun part2(input: String) = findMarker(input, 14)
