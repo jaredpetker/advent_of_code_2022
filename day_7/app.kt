@@ -50,7 +50,7 @@ sealed class Resource {
         }
 
         fun shallowSize(): Int {
-            return resources.filterIsInstance<File>().fold(0) { acc, file -> acc + file.size }
+            return resources.filterIsInstance<File>().sumOf { it.size }
         }
     }
 }
@@ -85,8 +85,8 @@ fun Command.Companion.parse(line: String): Command {
 }
 
 fun getDirSizes(dir: Resource.Dir, path: String = "", dirMap: HashMap<String, Int>): Int {
-    val childrenSize = dir.resources.filterIsInstance<Resource.Dir>().fold(0) { acc, d ->
-        acc + getDirSizes(d, arrayOf(path, dir.name).joinToString("/"), dirMap)
+    val childrenSize = dir.resources.filterIsInstance<Resource.Dir>().sumOf {
+        getDirSizes(it, arrayOf(path, dir.name).joinToString("/"), dirMap)
     }
     val size = dir.shallowSize() + childrenSize
     dirMap[arrayOf(path, dir.name).joinToString("/")] = size
@@ -97,30 +97,29 @@ fun main() {
     val root = Resource.Dir("")
     var currDir = root
 
-    File("input.txt").readLines().listIterator().let { iter ->
-        loop@ while (iter.hasNext()) {
-            val line = iter.next()
-            when (val cmd = Command.parse(line)) {
-                is Command.ChangeDir -> {
-                    if (cmd.dir == "/") {
-                        currDir = root
-                    } else {
-                        currDir.getDir(cmd.dir)?.let {
-                            currDir = it
-                        }
+    val iter = File("input.txt").readLines().listIterator()
+    loop@ while (iter.hasNext()) {
+        val line = iter.next()
+        when (val cmd = Command.parse(line)) {
+            is Command.ChangeDir -> {
+                if (cmd.dir == "/") {
+                    currDir = root
+                } else {
+                    currDir.getDir(cmd.dir)?.let {
+                        currDir = it
                     }
                 }
+            }
 
-                is Command.ListDir -> {
-                    while (iter.hasNext()) {
-                        val nextLine = iter.next()
-                        if (nextLine.startsWith('$')) {
-                            iter.previous()
-                            continue@loop
-                        }
-                        val props = cmd.process(nextLine)
-                        currDir.addResource(props)
+            is Command.ListDir -> {
+                while (iter.hasNext()) {
+                    val nextLine = iter.next()
+                    if (nextLine.startsWith('$')) {
+                        iter.previous()
+                        continue@loop
                     }
+                    val props = cmd.process(nextLine)
+                    currDir.addResource(props)
                 }
             }
         }
@@ -135,8 +134,8 @@ fun main() {
     }.value
 
     //part1
-    println(sumOfDirsUnderLimit)
+    println("part 1: $sumOfDirsUnderLimit")
 
     // part 2
-    println(spaceToFree)
+    println("part 2: $spaceToFree")
 }
