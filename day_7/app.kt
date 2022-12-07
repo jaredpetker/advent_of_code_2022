@@ -5,8 +5,6 @@ const val MAX_FILE_SIZE_SUM = 100000
 const val AVAILABLE_SPACE = 70000000
 const val DESIRED_UNUSED_SPACE = 30000000
 
-val CommandRegex = Regex("[$]\\s(\\w+)\\s?(.*)?")
-
 typealias Resources = Vector<Resource>
 
 sealed class ResourceProps {
@@ -56,7 +54,9 @@ sealed class Resource {
 }
 
 sealed class Command {
-    companion object {}
+    companion object {
+        val CommandRegex = Regex("[$]\\s(\\w+)\\s?(.*)?")
+    }
     data class ChangeDir(val dir: String) : Command()
     class ListDir : Command() {
         private val DirRegex = Regex("^dir\\s(\\w+)$")
