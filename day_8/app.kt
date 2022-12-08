@@ -1,71 +1,81 @@
 import java.io.File
+import java.util.stream.IntStream
 
 data class Dir(val dx: IntProgression, val dy: IntProgression)
 
-fun getDirections(x: Int, y: Int, width: Int, height: Int): Array<Dir> {
-    return arrayOf(
-        Dir(x - 1 downTo 0, y .. y),
-        Dir(x + 1 until  width, y .. y),
-        Dir(x .. x, y - 1 downTo 0),
-        Dir(x .. x, y + 1 until height)
-    )
-}
 
-fun countVisibleTrees(input: List<String>): Int {
-    val stride = input[0].length
-    val height = input.size
-    return input.flatMapIndexed { y, s ->
-        s.mapIndexed columnIter@ { x, tree ->
-            val h = tree.digitToInt()
-            dirIter@ for ((dx, dy) in getDirections(x, y, stride, height)) {
+
+data class Pos(val x: Int, val y: Int)
+
+data class GridItem(val item: Int, val pos: Pos)
+
+class Grid constructor(private val grid: List<List<Int>>)  {
+    companion object {}
+
+    private val width = grid[0].size
+    private val height = grid.size
+    val visibleTreeCount: Int = countVisibleTrees()
+    val highestScenicScore: Int = findHighestScenicScore()
+
+    private fun sequence(): Sequence<GridItem> = sequence {
+        grid.forEachIndexed {y, row ->
+            row.forEachIndexed {x, item ->
+                yield(GridItem(item, Pos(x, y)))
+            }
+        }
+    }
+
+    private fun directions(x: Int, y: Int, width: Int, height: Int): Sequence<Dir> = sequence {
+        yield(Dir(x - 1 downTo 0, y .. y))
+        yield(Dir(x + 1 until  width, y .. y))
+        yield(Dir(x .. x, y - 1 downTo 0))
+        yield(Dir(x .. x, y + 1 until height))
+    }
+
+    private fun countVisibleTrees(): Int {
+        return sequence().mapNotNullTo(HashSet()) mapTo@ { (item, pos) ->
+            dirIter@ for ((dx, dy) in directions(pos.x, pos.y, width, height)) {
                 for (px in dx) {
                     for (py in dy) {
-                        if (input[py][px].digitToInt() >= h) {
+                        if (grid[py][px] >= item) {
                             continue@dirIter
                         }
                     }
                 }
-                return@columnIter y * stride + x
+                return@mapTo pos.y * width + pos.x
             }
-        }
-    }.distinct().size
-}
+            return@mapTo null
+        }.size
+    }
 
-fun findHighestScenicScore(input: List<String>): Int {
-    val stride = input[0].length
-    val height = input.size
-    var max = 0
-    input.forEachIndexed { y, s ->
-        s.forEachIndexed inner@ { x, tree ->
-            val h = tree.digitToInt()
-            val score = getDirections(x, y, stride, height).map {  (dx, dy) ->
+    private fun findHighestScenicScore(): Int {
+        return sequence().fold(0) fold@ { acc, (item, pos) ->
+            val score = directions(pos.x, pos.y, width, height).fold(1) { scoreAcc, (dx, dy) ->
                 var treeCount = 0
                 loop@ for (px in dx) {
                     for (py in dy) {
-                        val tHeight = input[py][px].digitToInt()
-                        if (tHeight <= h) {
+                        val tHeight = grid[py][px]
+                        if (tHeight <= item) {
                             treeCount++
                         }
-                        if (tHeight >= h) {
+                        if (tHeight >= item) {
                             break@loop
                         }
                     }
                 }
-                treeCount
-            }.fold(1) { acc, next -> acc * next }
-            if (score > max) {
-                max = score
+                scoreAcc * treeCount
             }
+            return@fold if (score > acc) score else acc
         }
     }
-    return max
 }
 
-val part1 = ::countVisibleTrees
-val part2 = ::findHighestScenicScore
+fun Grid.Companion.parse(input: List<String>): Grid {
+    return Grid(input.map { str -> str.toList().map { it.digitToInt() } })
+}
 
 fun main() {
     val input = File("input.txt").readLines()
-    println("part 1 answer: ${part1(input)}")
-    println("part 2 answer: ${part2(input)}")
+    println(Grid.parse(input).visibleTreeCount)
+    println(Grid.parse(input).highestScenicScore)
 }
