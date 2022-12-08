@@ -11,8 +11,7 @@ fun getDirections(x: Int, y: Int, width: Int, height: Int): Array<Dir> {
     )
 }
 
-fun countVisibleTrees(): Int {
-    val input = File("input.txt").readLines()
+fun countVisibleTrees(input: List<String>): Int {
     val stride = input[0].length
     val height = input.size
     return input.flatMapIndexed { y, s ->
@@ -32,8 +31,7 @@ fun countVisibleTrees(): Int {
     }.distinct().size
 }
 
-fun findHighestScenicScore(): Int {
-    val input = File("input.txt").readLines()
+fun findHighestScenicScore(input: List<String>): Int {
     val stride = input[0].length
     val height = input.size
     var max = 0
@@ -63,10 +61,11 @@ fun findHighestScenicScore(): Int {
     return max
 }
 
-fun part1() = countVisibleTrees()
-fun part2() = findHighestScenicScore()
+val part1 = ::countVisibleTrees
+val part2 = ::findHighestScenicScore
 
 fun main() {
-    println("part 1 answer: ${part1()}")
-    println("part 2 answer: ${part2()}")
+    val input = File("input.txt").readLines()
+    println("part 1 answer: ${part1(input)}")
+    println("part 2 answer: ${part2(input)}")
 }
