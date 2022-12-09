@@ -24,10 +24,8 @@ fun moves(lines: List<String>) = sequence {
            moveCount -= 1
        } else {
            val line = lines[listPos]
-           val dir = line.take(1)
-           val count = line.drop(2).toInt()
-           currMove = Move2D.valueOf(dir)
-           moveCount = count
+           currMove = Move2D.valueOf(line.take(1))
+           moveCount = line.drop(2).toInt()
            listPos += 1
        }
     }
@@ -38,9 +36,10 @@ class Grid constructor(private val knotCount: Int = 2) {
     private val tailVisited = hashSetOf(Pos())
 
     private fun moveKnot(index: Int, move: Move) {
-        val head = knots[index]
-        head.x += move.x
-        head.y += move.y
+        knots[index].let {
+            it.x += move.x
+            it.y += move.y
+        }
     }
 
     private fun settle() {
@@ -49,7 +48,7 @@ class Grid constructor(private val knotCount: Int = 2) {
             val curr = knots[i]
             val dx = prev.x - curr.x
             val dy = prev.y - curr.y
-            val isHeadFarDiagonally = (dx.absoluteValue + dy.absoluteValue) > 2
+            val isHeadFarDiagonally = dx.absoluteValue + dy.absoluteValue > 2
             moveKnot(i, Move(
                 if (dx.absoluteValue > 1 || isHeadFarDiagonally) dx.coerceIn(-1, 1) else 0,
                 if (dy.absoluteValue > 1 || isHeadFarDiagonally) dy.coerceIn(-1, 1) else 0
