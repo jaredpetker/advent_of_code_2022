@@ -1,7 +1,6 @@
 use regex::{Regex, Match};
 use std::collections::{VecDeque};
 
-
 struct U64(u64);
 impl <'t> From<Option<Match<'t>>> for U64 {
   fn from(c: Option<Match<'t>>) -> Self {
@@ -62,8 +61,20 @@ impl Monkey {
     }
   }
 
-  fn eval(&mut self, post_op: EvalPostOp) -> (usize, u64) {
-    let item = self.starting_items.pop_front().unwrap();
+  fn throw_to(&mut self, item: u64) {
+    self.starting_items.push_back(val_to_throw);
+  }
+
+  fn eval_items(&mut self, post_op: EvalPostOp) -> Vec<(usize, u64)> {
+    let mut items_to_throw: Vec<(usize, u64)> = vec![];
+    while self.starting_items.len() > 0 {
+      let item = self.starting_items.pop_front().unwrap();
+      items_to_throw.push(self.eval(item, &post_op));
+    }
+    return items_to_throw;
+  }
+
+  fn eval(&mut self, item: u64, post_op: &EvalPostOp) -> (usize, u64) {
     let mut new = self.apply_op(item.clone());
     new = match post_op {
       EvalPostOp::Div(num) => new / num,
@@ -85,7 +96,7 @@ impl From<Vec<&str>> for Monkey {
     let operation_re: Regex = Regex::new(r"old ([+*]) (\d+|old)").unwrap();
     let test_re: Regex = Regex::new(r"(\d+)").unwrap();
     let items_iter = starting_items_re.captures_iter(lines[1]);
-    let starting_items: VecDeque<u64> = items_iter.map(|s| s.get(0).unwrap().as_str().parse::<u64>().unwrap()).collect();
+    let starting_items: VecDeque<u64> = items_iter.map(|s| U64::from(s.get(0)).0).collect();
     let op_captures = operation_re.captures(lines[2]).unwrap();
     let op = op_captures.get(1).unwrap().as_str();
     let right_value = op_captures.get(2).unwrap().as_str();
@@ -128,17 +139,16 @@ fn main() {
       inspection_counts[i] = 0;
     }
     let mut monkeys = monkeys.clone();
-    let count = if part == 1 { 20 } else { 10000 };
-    for _ in 0..count {
+    let num_rounds = if part == 1 { 20 } else { 10000 };
+    for _ in 0..num_rounds {
       for i in 0..monkeys.len() {
-        let items_count = monkeys[i].starting_items.len();
-        for _ in 0..items_count {
-          inspection_counts[i] += 1;
-          let monkey = &mut monkeys[i];
-          let (throw_to, val_to_throw) = monkey.eval(
-            if part == 1 { EvalPostOp::Div(3) } else { EvalPostOp::Mod(modulus) }
-          );
-          monkeys[throw_to].starting_items.push_back(val_to_throw);
+        let monkey = &mut monkeys[i];
+        let items_to_throw = monkey.eval_items(
+          if part == 1 { EvalPostOp::Div(3) } else { EvalPostOp::Mod(modulus) }
+        );
+        inspection_counts[i] += items_to_throw.len() as u64;
+        for (throw_to, val_to_throw) in items_to_throw {
+          monkeys[throw_to].throw_to(val_to_throw);
         }
       }
     }
