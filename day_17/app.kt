@@ -1,4 +1,5 @@
 import java.io.File
+import java.lang.StringBuilder
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -34,15 +35,13 @@ data class Piece(val pattern: String, val stride: Int) {
 
 fun Int.firstNBits(n: Int): String {
     val b = Integer.toBinaryString(this)
-    return "0".repeat(n).replaceRange(n - b.length until n, b).replace("1", "#").replace("0", ".")
+    return "0".repeat(n).replaceRange(n - b.length until n, b)
+//  .replace("1", "#").replace("0", ".")
 }
 
 data class Chamber(val width: Int = 7) {
-    val jet = File("input.txt").readText()
-    var jetPos = 0
-    val grid: Vector<Int> = Vector()
-    var topMost = -1
-    val pieces = listOf(
+    private val jet = File("input.txt").readText()
+    private val pieces = listOf(
         Piece("####", 7),
         Piece(
             """
@@ -73,16 +72,19 @@ data class Chamber(val width: Int = 7) {
         """.trimIndent(), 7
         )
     )
-    val cache: HashMap<String, Pair<Long, Int>> = HashMap()
-    val topMostCache: HashMap<Long, Int> = HashMap()
+    private var jetPos = 0
+    private val grid: Vector<Int> = Vector()
+    private var topMost = -1
+    private val cache: HashMap<String, Pair<Long, Int>> = HashMap()
+    private val topMostCache: HashMap<Long, Int> = HashMap()
 
     private fun dropPiece(piece: Piece, count: Long): Pair<Long, Long>? {
 
         // generate the piece rows
         val pieceRows = Array(piece.height) { 0 }
-        var shiftBy = 2
+        var shiftedBy = 2
         for (h in 0 until piece.height) {
-            val b = ((piece.bits and (0b1111111 shl h * width)) shr (h * width)) shl shiftBy
+            val b = ((piece.bits and (0b1111111 shl h * width)) shr (h * width)) shl shiftedBy
             pieceRows[h] = b
         }
 
@@ -110,47 +112,50 @@ data class Chamber(val width: Int = 7) {
                 jetPos = 0
             }
 
-            // TODO: this area is gnarly. bitshifts rows, checks collisions, rolls back if needed
-            if (jet[jetPos] == '<') {
-                // shift right
-                if (shiftBy > 0) {
-                    shiftBy -= 1
-                    for (i in 0 until pieceRows.size) {
-                        pieceRows[i] = pieceRows[i] shr 1
-                    }
-                    if (curPosBot <= topMost) {
-                        for ((i, _) in pieceRows.withIndex()) {
-                            if (pieceRows[pieceRows.size - 1 - i] and grid[curPosBot + i] != 0) {
-                                for (i in 0 until pieceRows.size) {
-                                    pieceRows[i] = pieceRows[i] shl 1
-                                }
-                                shiftBy += 1
-                                break
-                            }
+            // apply jet shift
+            var dir = 0
+            when (jet[jetPos]) {
+                '<' -> {
+                    // if there is room to shift over
+                    if (shiftedBy > 0) {
+                        // shift ever row over 1
+                        dir = -1
+                        shiftedBy += dir
+                        for (i in pieceRows.indices) {
+                            pieceRows[i] = pieceRows[i] shr 1
                         }
+
                     }
                 }
-
-            } else {
-                // shift left
-                if (width - piece.width > shiftBy) {
-                    shiftBy += 1
-                    for (i in 0 until pieceRows.size) {
-                        pieceRows[i] = pieceRows[i] shl 1
-                    }
-                    if (curPosBot <= topMost) {
-                        for ((i, _) in pieceRows.withIndex()) {
-                            if (pieceRows[pieceRows.size - 1 - i] and grid[curPosBot + i] != 0) {
-                                for (i in 0 until pieceRows.size) {
-                                    pieceRows[i] = pieceRows[i] shr 1
-                                }
-                                shiftBy -= 1
-                                break
-                            }
+                '>' -> {
+                    // if there is room to shift over
+                    if (width - piece.width > shiftedBy) {
+                        // shift ever row over 1
+                        dir = 1
+                        shiftedBy += dir
+                        for (i in pieceRows.indices) {
+                            pieceRows[i] = pieceRows[i] shl 1
                         }
+
                     }
                 }
+            }
 
+            // check collisions, rollback if needed
+            if (curPosBot <= topMost) {
+                for (i in pieceRows.indices) {
+                    if (pieceRows[pieceRows.size - 1 - i] and grid[curPosBot + i] != 0) {
+                        for (pi in pieceRows.indices) {
+                            if (dir == 1) {
+                                pieceRows[pi] = pieceRows[pi] shr 1
+                            } else {
+                                pieceRows[pi] = pieceRows[pi] shl 1
+                            }
+                        }
+                        shiftedBy -= dir
+                        break
+                    }
+                }
             }
 
             jetPos += 1
@@ -160,36 +165,29 @@ data class Chamber(val width: Int = 7) {
 
         for (i in 0 until piece.height) {
             grid[curPosBot + piece.height - i] = grid[curPosBot + piece.height - i] or pieceRows[i]
-//            if ((grid[curPosBot + piece.height - i] and 0b1111111) == 0b1111111) {
-//                fullRow = curPosBot + piece.height - i
-//            }
         }
 
-        var fullRow = -1
-        var runningOr = 0
-        var windowKey = ""
+        var blocked = false
+        var rowAcc = 0
+        val windowKey = StringBuilder()
         if (grid.size >= 4 && curPosBot >= 0) {
             for (i in 0 until 4) {
-                runningOr = runningOr or grid[curPosBot + 3 - i]
-                windowKey += runningOr
-                if (runningOr == 0b1111111) {
-                    fullRow = curPosBot
+                rowAcc = rowAcc or grid[curPosBot + 3 - i]
+                windowKey.append(rowAcc)
+                if (rowAcc == 0b1111111) {
+                    blocked = true
                 }
             }
         }
 
-
-
-        val cacheKey = "$windowKey/${fullRow >= 0}/$piece.bits/$jetPos"
+        val cacheKey = "$windowKey/${blocked}/$piece.bits/$jetPos"
         topMostCache[count] = topMost
-        if (cache.containsKey(cacheKey) && fullRow >= 0) {
-            return Pair(cache[cacheKey]!!.first, count)
+        return if (cache.containsKey(cacheKey) && blocked) {
+            Pair(cache[cacheKey]!!.first, count)
+        } else {
+            cache[cacheKey] = Pair(count, topMost)
+            null
         }
-        cache[cacheKey] = Pair(count, topMost)
-//        for (i in grid.reversed()) {
-//            println(i.firstNBits(width).reversed())
-//        }
-        return null
     }
 
     private fun nextPiece() = sequence {
@@ -198,7 +196,7 @@ data class Chamber(val width: Int = 7) {
         }
     }
 
-    fun run(max: Long) {
+    fun run(max: Long): Long {
         val iter = nextPiece().iterator()
         var repeated: Pair<Long, Long>? = null
         for (i in 0 until max) {
@@ -207,23 +205,20 @@ data class Chamber(val width: Int = 7) {
                 break
             }
         }
-        if (repeated != null) {
+        return if (repeated != null) {
             val div = (max - repeated.first) / (repeated.second - repeated.first)
             val rem = (max - repeated.first) % (repeated.second - repeated.first)
-            println(
-                topMostCache[repeated.first]!!
-                        + (div * (topMostCache[repeated.second]!! - topMostCache[repeated.first]!!))
-                        + (topMostCache[repeated.first + rem]!! - topMostCache[repeated.first]!!)
-                        + 1
-            )
+            topMostCache[repeated.first]!! + 1 +
+                    (div * (topMostCache[repeated.second]!! - topMostCache[repeated.first]!!)) +
+                    (topMostCache[repeated.first + rem]!! - topMostCache[repeated.first]!!)
         } else {
-            println(topMost + 1)
+            (topMost + 1).toLong()
         }
 
     }
 }
 
 fun main() {
-    Chamber().run(2022)
-    Chamber().run(1000000000000)
+    println("Part 1 answer: ${Chamber().run(2022)}")
+    println("Part 2 answer: ${Chamber().run(1000000000000)}")
 }
