@@ -23,7 +23,7 @@ val dirs = arrayOf(
 // Any time a point (cube) that is lava is encountered, increment that points "count"
 // A cube can only be entered once from any particular point of air that is outside of it as
 // long as we also keep track of which points (cubes) are air.
-fun dfs(point: Point3D, bounds: Pair<Point3D, Point3D>, pointsMap: HashMap<Point3D, Int>) {
+fun findSurfaceArea(point: Point3D, bounds: Pair<Point3D, Point3D>, pointsMap: HashMap<Point3D, Int>): Int {
     // for the pointsMap
     // -1 means air
     // 0 or above is lava
@@ -47,19 +47,34 @@ fun dfs(point: Point3D, bounds: Pair<Point3D, Point3D>, pointsMap: HashMap<Point
             queue.add(Point3D(p.x + dir.x, p.y + dir.y, p.z + dir.z))
         }
     }
-
+    return pointsMap.values.filter { it > -1 }.sum()
 }
 
 fun main() {
     val points = File("input.txt").readLines()
         .map { it.split(",").let { s -> Point3D(s[0].toInt(), s[1].toInt(), s[2].toInt()) } }
-
     val pointsMap = HashMap<Point3D, Int>()
 
     // part 1
     var sides = points.size * 6
+    var minX = Int.MAX_VALUE
+    var maxX = Int.MIN_VALUE
+    var minY = Int.MAX_VALUE
+    var maxY = Int.MIN_VALUE
+    var minZ = Int.MAX_VALUE
+    var maxZ = Int.MIN_VALUE
+
     for (i in points.indices) {
         pointsMap[points[i]] = 0
+
+        val p = points[i]
+        minX = p.x.coerceAtMost(minX)
+        maxX = p.x.coerceAtLeast(maxX)
+        minY = p.y.coerceAtMost(minY)
+        maxY = p.y.coerceAtLeast(maxY)
+        minZ = p.z.coerceAtMost(minZ)
+        maxZ = p.z.coerceAtLeast(maxZ)
+
         for (j in (i + 1) until points.size) {
             val distance = points[i].distance(points[j])
             if (distance == 1.toDouble()) {
@@ -70,18 +85,10 @@ fun main() {
     println("part 1 answer: $sides")
 
     // part 2
-    val sortedX = points.sortedBy { it.x }
-    val minX = (sortedX.first().x - 1)
-    val maxX = (sortedX.last().x + 1)
-
-    val sortedY = points.sortedBy { it.y }
-    val minY = (sortedY.first().y - 1)
-    val maxY = (sortedY.last().y + 1)
-
-    val sortedZ = points.sortedBy { it.z }
-    val minZ = (sortedZ.first().z - 1)
-    val maxZ = (sortedZ.last().z + 1)
-
-    dfs(Point3D(minX, minY, minZ), Pair(Point3D(minX, minY, minZ), Point3D(maxX, maxY, maxZ)), pointsMap)
-    println("part 2 answer: ${pointsMap.values.filter { it > -1 }.sum()}")
+    val surfaceArea = findSurfaceArea(
+        Point3D(minX, minY, minZ),
+        Pair(Point3D(minX, minY, minZ), Point3D(maxX, maxY, maxZ)),
+        pointsMap
+    )
+    println("part 2 answer: $surfaceArea")
 }
