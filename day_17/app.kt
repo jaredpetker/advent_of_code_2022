@@ -1,14 +1,17 @@
 import java.io.File
-import java.lang.StringBuilder
 import java.util.*
-import kotlin.collections.HashMap
+
+data class Quadruple<A,B,C,D>(var first: A, var second: B, var third: C, var fourth: D) {
+    override fun toString(): String = "($first, $second, $third, $fourth)"
+}
+
 
 data class Piece(val pattern: String, val stride: Int) {
     val width = pattern.indexOf('\n').takeIf { it > -1 } ?: pattern.length
     val height = pattern.count { it == '\n' } + 1
     val bits = run {
         var mod = 0
-        var j = 0;
+        var j = 0
         pattern.toCharArray().withIndex().fold(0) { acc, indexed ->
             var b = acc
             val (i, c) = indexed
@@ -29,7 +32,7 @@ data class Piece(val pattern: String, val stride: Int) {
     }
 
     override fun toString(): String {
-        return Integer.toBinaryString(this.bits.toInt()).reversed().chunked(7).joinToString("\n")
+        return Integer.toBinaryString(this.bits).reversed().chunked(7).joinToString("\n")
     }
 }
 
@@ -75,7 +78,8 @@ data class Chamber(val width: Int = 7) {
     private var jetPos = 0
     private val grid: Vector<Int> = Vector()
     private var topMost = -1
-    private val cache: HashMap<String, Pair<Long, Int>> = HashMap()
+
+    private val cache: HashMap<Quadruple<String, Boolean, Int, Int>, Pair<Long, Int>> = HashMap()
     private val topMostCache: HashMap<Long, Int> = HashMap()
 
     private fun dropPiece(piece: Piece, count: Long): Pair<Long, Long>? {
@@ -180,7 +184,8 @@ data class Chamber(val width: Int = 7) {
             }
         }
 
-        val cacheKey = "$windowKey/${blocked}/$piece.bits/$jetPos"
+
+        val cacheKey = Quadruple(windowKey.toString(), blocked, piece.bits, jetPos)
         topMostCache[count] = topMost
         return if (cache.containsKey(cacheKey) && blocked) {
             Pair(cache[cacheKey]!!.first, count)
@@ -200,7 +205,7 @@ data class Chamber(val width: Int = 7) {
         val iter = nextPiece().iterator()
         var repeated: Pair<Long, Long>? = null
         for (i in 0 until max) {
-            repeated = dropPiece(iter.next(), (i + 1).toLong())
+            repeated = dropPiece(iter.next(), (i + 1))
             if (repeated != null) {
                 break
             }
