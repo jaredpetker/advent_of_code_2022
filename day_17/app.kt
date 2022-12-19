@@ -5,7 +5,6 @@ data class Quadruple<A,B,C,D>(var first: A, var second: B, var third: C, var fou
     override fun toString(): String = "($first, $second, $third, $fourth)"
 }
 
-
 data class Piece(val pattern: String, val stride: Int) {
     val width = pattern.indexOf('\n').takeIf { it > -1 } ?: pattern.length
     val height = pattern.count { it == '\n' } + 1
@@ -183,7 +182,6 @@ data class Chamber(val width: Int = 7) {
                 }
             }
         }
-
 
         val cacheKey = Quadruple(windowKey.toString(), blocked, piece.bits, jetPos)
         topMostCache[count] = topMost
