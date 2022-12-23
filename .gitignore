@@ -9,4 +9,8 @@
 
 # Added by cargo
 
-/target
+target
+out
+.idea
+*.iml
+*.swp
